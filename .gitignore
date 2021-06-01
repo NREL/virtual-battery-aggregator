@@ -1,0 +1,12 @@
+*.pyc
+*.log
+.DS_Store
+
+.idea/
+__pycache__/
+src/
+build/
+dist/
+*.egg-info/
+
+outputs/
