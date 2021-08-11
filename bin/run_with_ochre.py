@@ -101,7 +101,7 @@ virtual_setpoint = 10  # in kW
 
 # Dispatch setpoint to individual batteries
 setpoints = agg.dispatch(p_setpoint=virtual_setpoint)
-print(f'Setpoints for individual batteries with a virtual battery setpoint of {virtual_setpoint}: {setpoints}')
+print(f'Setpoints for individual batteries with a virtual battery setpoint of {virtual_setpoint} kW: {setpoints}')
 
 # ********* Next Time Step ************
 

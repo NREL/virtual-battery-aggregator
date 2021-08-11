@@ -71,7 +71,9 @@ class BatteryAggregator:
         self.parameters = {
             'p_chg': cp.Variable((n,), name='p_chg', nonneg=True),
             'p_dis': cp.Variable((n,), name='p_dis', nonneg=True),
+
             'p_set': cp.Parameter(name='p_set'),
+            'p_max': cp.Parameter((n,), name='p_max', nonneg=True),
             'p_max_inv': cp.Parameter((n,), name='p_max_inv', nonneg=True),
             'soc': cp.Parameter((n,), name='soc', nonneg=True),
             'eta_chg': cp.Parameter((n,), name='eta_chg', nonneg=True),
@@ -89,6 +91,8 @@ class BatteryAggregator:
         constraints = [
             soc_new >= 0,
             soc_new <= 1,
+            self.parameters['p_chg'] <= self.parameters['p_max'],
+            self.parameters['p_dis'] <= self.parameters['p_max'],
             cp.sum(p) == self.parameters['p_set']
         ]
 
@@ -117,6 +121,7 @@ class BatteryAggregator:
             self.models.update(df_updates)
 
         # Update optimization parameters
+        self.parameters['p_max'].value = self.models['Power Capacity (kW)'].values
         self.parameters['p_max_inv'].value = 1 / self.models['Power Capacity (kW)'].values
         self.parameters['soc'].value = self.models['State of Charge (-)'].values
 
@@ -172,13 +177,25 @@ class BatteryAggregator:
             opt_value = None
             print('Solver error:', e)
 
-        # If abs(optimization value) > 1, problem is infeasible -> fail or raise a warning
-        if 'infeasible' in self.problem.status or 'unbounded' in self.problem.status or abs(opt_value) > 1:
+        if 'infeasible' in self.problem.status and p_setpoint != 0:
+            # Setpoint is infeasible given SOC/power constraints. Print a warning and minimize deviation from setpoint
+            if p_setpoint > 0:
+                soc_limits = (1 - self.parameters['soc'].value) / self.parameters['eta_chg'].value
+            else:
+                soc_limits = -self.parameters['soc'].value / self.parameters['eta_dis'].value
+            setpoints = np.clip(soc_limits, -self.parameters['p_max'].value, self.parameters['p_max'].value)
+            print(f'WARNING: Virtual power setpoint of {p_setpoint} kW is infeasible.'
+                  f' Closest achievable setpoint is {setpoints.sum()} kW.')
+            pass
+        elif 'infeasible' in self.problem.status or 'unbounded' in self.problem.status:
+            # If problem didn't solve, fail or raise a warning
             if fail_on_error:
                 raise Exception(f'Optimization failed with status {self.problem.status} and value {opt_value}.')
             else:
                 print(f'WARNING: Optimization failed with status {self.problem.status} and value {opt_value}.')
+                setpoints = np.zeros(len(self.models))
+        else:
+            setpoints = self.parameters['p_chg'].value - self.parameters['p_dis'].value
 
         # Return dictionary of setpoints
-        setpoints = self.parameters['p_chg'].value - self.parameters['p_dis'].value
         return dict(zip(self.models.index, setpoints))

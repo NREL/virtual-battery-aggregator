@@ -29,33 +29,54 @@ agg = BatteryAggregator(time_res, models=models)
 # Show model parameters
 print('Individual model parameters:')
 print(agg.models)
+print()
+
+
+def round_dict(d, digits=3):
+    return {key: round(val, digits) for key, val in d.items()}
+
 
 # Aggregate models (all)
 virtual_model = agg.aggregate()
-print('Aggregated model parameters:', virtual_model)
+print('Aggregated model parameters:', round_dict(virtual_model))
 
 # Aggregate models (selection)
 virtual_model = agg.aggregate(['A', 'B', 'C'])
-print('Aggregated model parameters (from selection):', virtual_model)
+print('Aggregated model parameters (from selection):', round_dict(virtual_model))
+print()
 
 # Dispatch power setpoint
 setpoints = agg.dispatch(p_setpoint=1)
-print('Dispatch setpoints for 1 kW (charge) virtual setpoint:', setpoints)
-
-setpoints = agg.dispatch(p_setpoint=-1)
-print('Dispatch setpoints for -1 kW (discharge) virtual setpoint:', setpoints)
+print('Dispatch setpoints for 1 kW (charge) virtual setpoint:', round_dict(setpoints))
 
 setpoints = agg.dispatch(p_setpoint=10)
-print('Dispatch setpoints for 10 kW (charge) virtual setpoint:', setpoints)
+print('Dispatch setpoints for 10 kW (charge) virtual setpoint:', round_dict(setpoints))
 
 setpoints = agg.dispatch(p_setpoint=-8)
-print('Dispatch setpoints for -8 kW (discharge) virtual setpoint:', setpoints)
+print('Dispatch setpoints for -8 kW (discharge) virtual setpoint:', round_dict(setpoints))
+
+print('Running dispatch with an *infeasible* virtual setpoint of 25 kW (discharge)...')
+setpoints = agg.dispatch(p_setpoint=25)
+print('Dispatch setpoints for 25 kW (charge) virtual setpoint:', round_dict(setpoints))
+print()
 
 # Update and redispatch
 parameter_updates = {
-    'A': {'State of Charge (-)': 0.01},
-    'B': {'State of Charge (-)': 0},
+    'A': {'State of Charge (-)': 0.1},
+    'B': {'State of Charge (-)': 0.05},
+    'C': {'State of Charge (-)': 0.1},
+    'D': {'State of Charge (-)': 0},
+    'E': {'State of Charge (-)': 0},
+    'F': {'State of Charge (-)': 0},
 }
 agg.update_parameters(**parameter_updates)
-setpoints = agg.dispatch(p_setpoint=-8)
-print('Updated dispatch setpoints for -8 kW (discharge) virtual setpoint:', setpoints)
+print('Updating model parameters with low SOC:')
+print(agg.models)
+print()
+
+setpoints = agg.dispatch(p_setpoint=-1)
+print('Updated dispatch setpoints for -1 kW (discharge) virtual setpoint:', round_dict(setpoints))
+
+print('Running dispatch with an *infeasible* virtual setpoint of -6 kW (discharge)...')
+setpoints = agg.dispatch(p_setpoint=-6)
+print('Updated dispatch setpoints for -6 kW (discharge) virtual setpoint:', round_dict(setpoints))
