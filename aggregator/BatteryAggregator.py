@@ -152,29 +152,24 @@ class BatteryAggregator:
         self.aggregated_model_names = model_names if model_names is not None else self.models.index
         df = self.models.loc[self.aggregated_model_names, :]
 
-        # SOC is weighted average of energy capacity
-        soc_kwh = df['State of Charge (-)'] * df['Energy Capacity (kWh)']
-        agg_capacity = df['Energy Capacity (kWh)'].sum()
-        soc = soc_kwh.sum() / agg_capacity
-
         # determine max charge and discharge power per battery
+        soc_kwh = df['State of Charge (-)'] * df['Energy Capacity (kWh)']
         hours = self.time_res.total_seconds() / 3600
         full_charge_power = (df['Energy Capacity (kWh)'] - soc_kwh) / hours / df['Charge Efficiency (-)']
         self.charge_max_power = full_charge_power.clip(lower=0, upper=df['Power Capacity (kW)'])
         full_discharge_power = soc_kwh / hours * df['Discharge Efficiency (-)']
         self.discharge_max_power = full_discharge_power.clip(lower=0, upper=df['Power Capacity (kW)'])
 
-        # Efficiency is weighted average of power capacity, only for batteries not at full capacity
-        can_charge = df['State of Charge (-)'] < 1
-        can_discharge = df['State of Charge (-)'] > 0
-        eff_charge = weighted_average(df.loc[can_charge, 'Charge Efficiency (-)'],
-                                      df.loc[can_charge, 'Power Capacity (kW)'])
-        eff_discharge = weighted_average(df.loc[can_discharge, 'Discharge Efficiency (-)'],
-                                         df.loc[can_discharge, 'Power Capacity (kW)'])
+        # SOC is weighted average of energy capacity
+        soc = weighted_average(df['State of Charge (-)'], df['Energy Capacity (kWh)'])
+
+        # Efficiency is weighted average of max power
+        eff_charge = weighted_average(df['Charge Efficiency (-)'], self.charge_max_power)
+        eff_discharge = weighted_average(df['Discharge Efficiency (-)'], self.discharge_max_power)
 
         self.aggregated_model = {
             'State of Charge (-)': soc,
-            'Energy Capacity (kWh)': agg_capacity,
+            'Energy Capacity (kWh)': df['Energy Capacity (kWh)'].sum(),
             'Power Capacity (kW)': df['Power Capacity (kW)'].sum(),
             'Charge Efficiency (-)': eff_charge,
             'Discharge Efficiency (-)': eff_discharge,
