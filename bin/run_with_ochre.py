@@ -3,6 +3,8 @@ from ochre import Battery, __version__
 
 from aggregator import BatteryAggregator
 
+# script to run with main version of OCHRE, see https://github.nrel.gov/Customer-Modeling/ochre
+
 # Parameters for simulation
 time_res = dt.timedelta(minutes=5)
 temperature_schedule = {'ambient_dry_bulb': 20}
@@ -90,7 +92,7 @@ for name, battery in battery_dict.items():
 models = {name: get_ochre_properties(battery) for name, battery in battery_dict.items()}
 
 # Send parameters to aggregator
-agg.update_parameters(**models)
+agg.update_models(**models)
 
 # Aggregate model to create virtual battery model
 virtual_model = agg.aggregate()

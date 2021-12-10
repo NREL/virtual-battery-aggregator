@@ -69,7 +69,7 @@ parameter_updates = {
     'E': {'State of Charge (-)': 0},
     'F': {'State of Charge (-)': 0},
 }
-agg.update_parameters(**parameter_updates)
+agg.update_models(**parameter_updates)
 print('Updating model parameters with low SOC:')
 print(agg.models)
 print()
