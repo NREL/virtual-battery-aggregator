@@ -96,7 +96,7 @@ class BatteryAggregator:
         objective = cp.Minimize(
             cp.maximum(cp.max(cp.multiply(p_chg, self.parameters['p_max_inv'])),
                        cp.max(cp.multiply(p_dis, self.parameters['p_max_inv'])))
-            + cp.sum(cp.multiply(p_chg + p_dis, self.parameters['p_max_inv']))
+            + cp.sum(p_chg + p_dis)
         )
 
         # Create constraints: SOC constraints, setpoint constraint
@@ -209,10 +209,12 @@ class BatteryAggregator:
                 print(f'WARNING: Optimization failed with status {self.problem.status} and value {opt_value}.')
                 setpoints = np.zeros(len(self.models))
         elif not all([min(abs(c), abs(d)) < 0.01 for c, d in zip(p_chg, p_dis)]):
+            df_params = pd.DataFrame({name: param.value for name, param in self.parameters.items()},
+                                     index=self.aggregated_model_names).T
             if fail_on_error:
-                raise Exception(f'Simultaneous charging and discharging issue. Optimization values: {self.parameters}')
+                raise Exception(f'Simultaneous charging and discharging issue. Optimization values: {df_params}')
             else:
-                print(f'Simultaneous charging and discharging issue. Optimization values: {self.parameters}')
+                print(f'Simultaneous charging and discharging issue. Optimization values: {df_params}')
                 setpoints = np.zeros(len(self.models))
         else:
             setpoints = p_chg - p_dis
