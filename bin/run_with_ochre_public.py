@@ -3,11 +3,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
-from ochre import Battery, __version__
+# from ochre import Battery, __version__  # For newer version of OCHRE
+from dwelling_model import Battery, __version__
 
 from aggregator import BatteryAggregator
 
-# script to run with public version of OCHRE, see https://github.com/jmaguire1/Public_OCHRE
+# script to run with public version of OCHRE (0.1.5), see https://github.com/jmaguire1/Public_OCHRE
 
 locator = mdates.AutoDateLocator()
 formatter = mdates.ConciseDateFormatter(locator, show_offset=False)
@@ -27,7 +28,7 @@ battery_properties = {
     'verbosity': 7,  # verbosity of results file (1-9)
 
     # Battery parameters for more, see ochre/defaults/Battery/default_parameters.csv
-    'capacity': 5,  # Power capacity, kW
+    'capacity_kw': 5,  # Power capacity, kW
     'capacity_kwh': 10,  # Energy capacity, kWh
     'soc_init': 0.2,
 
@@ -38,13 +39,13 @@ battery_properties = {
 battery_properties2 = battery_properties.copy()
 battery_properties2.update({
     'soc_init': 0.5,
-    'capacity': 5,  # Power capacity, kW
+    'capacity_kw': 5,  # Power capacity, kW
     'capacity_kwh': 10,  # Energy capacity, kWh
 })
 battery_properties3 = battery_properties.copy()
 battery_properties3.update({
     'soc_init': 0.8,
-    'capacity': 10,  # Power capacity, kW
+    'capacity_kw': 10,  # Power capacity, kW
     'capacity_kwh': 20,  # Energy capacity, kWh
 })
 
@@ -72,18 +73,18 @@ def get_ochre_properties(battery: Battery, soc_min=None, soc_max=None):
     capacity_kwh = battery.capacity_kwh * (soc_max - soc_min)
     soc_new = (battery.soc - soc_min) / (soc_max - soc_min)
 
-    # get charge/discharge efficiencies at half of power capacity
-    battery.electric_kw = battery.capacity / 2
-    eta_charge = battery.get_efficiency()
-    battery.electric_kw = -battery.capacity / 2
-    eta_discharge = battery.get_efficiency()
+    # get charge/discharge efficiencies at half of power capacity (newer OCHRE only)
+    # battery.electric_kw = battery.capacity / 2
+    # eta_charge = battery.get_efficiency()
+    # battery.electric_kw = -battery.capacity / 2
+    # eta_discharge = battery.get_efficiency()
 
     return {
         'State of Charge (-)': soc_new,
         'Energy Capacity (kWh)': capacity_kwh,
-        'Power Capacity (kW)': battery.capacity,
-        'Charge Efficiency (-)': eta_charge,
-        'Discharge Efficiency (-)': eta_discharge,
+        'Power Capacity (kW)': battery.capacity_kw,
+        'Charge Efficiency (-)': battery.eta_charge,
+        'Discharge Efficiency (-)': battery.eta_discharge,
     }
 
 
@@ -126,7 +127,7 @@ for _ in range(36):  # 3 hours
     for name, battery in battery_dict.items():
         controls = {'P Setpoint': setpoints.get(name)}
         battery.update(1, temperature_schedule, controls)
-        battery.update_model(None)
+        # battery.update_model(None)  # newer OCHRE version only
         power_to_dss = battery.electric_kw  # in kW, power output of battery to send to grid simulator
 
     # collect results

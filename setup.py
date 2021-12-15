@@ -11,7 +11,7 @@ requirements = [
     # 'ochre',
     'numpy',
     'pandas',
-    'cvxpy',
+    'cvxpy',  # Note: use conda with channel conda-forge (conda install -c conda-forge cvxpy)
 ]
 
 
