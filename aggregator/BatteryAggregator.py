@@ -128,6 +128,9 @@ class BatteryAggregator:
                 if not c.is_dpp():
                     raise Exception('Constraint is not DPP: {}'.format(c))
 
+        # set parameter values
+        self.update_models()
+
     def update_models(self, **models):
         # Update individual models and aggregated model
         if models:

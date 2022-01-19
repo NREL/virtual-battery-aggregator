@@ -103,9 +103,11 @@ print(agg.models)
 
 # ********* Start Simulation ************
 
-powers = []
-socs = []
-for _ in range(36):  # 3 hours
+# define virtual battery setpoints over time - changes once per hour for 3 hours of simulation
+virtual_setpoints = [10] * 12 + [-15] * 12 + [-8] * 12
+powers = []  # for results
+socs = []  # for results
+for virtual_setpoint in virtual_setpoints:
     # Get updated parameters from OCHRE models
     models = {name: get_ochre_properties(battery) for name, battery in battery_dict.items()}
 
@@ -117,7 +119,6 @@ for _ in range(36):  # 3 hours
     # print('Virtual battery model parameters:', virtual_model)
 
     # Send virtual model to FRS and receive virtual battery setpoint
-    virtual_setpoint = 8  # in kW
 
     # Dispatch setpoint to individual batteries
     setpoints = agg.dispatch(p_setpoint=virtual_setpoint)
@@ -142,14 +143,14 @@ socs = pd.DataFrame(socs, index=times)
 # socs.plot()
 
 fig, (ax1, ax2) = plt.subplots(2, 1, sharex='all')
-ax1.stackplot(powers.index, powers.values.T, labels=powers.columns)
-ax1.axhline(8, color='k', label='Virtual Setpoint')
-ax2.plot(socs.index, socs.values, label=socs.columns)
+ax1.stackplot(times, powers.values.T, labels=powers.columns)
+ax1.plot(times, virtual_setpoints, 'k', label='Virtual Setpoint')
+ax2.plot(times, socs.values, label=socs.columns)
 ax2.xaxis.set_major_formatter(formatter)
 ax1.set_ylabel('Battery Power (kW)')
 ax2.set_ylabel('Battery SOC (-)')
 handles, labels = ax1.get_legend_handles_labels()
-ax1.legend(handles[::-1], labels[::-1], loc='lower right')
+ax1.legend(handles[::-1], labels[::-1], loc='lower left')
 handles, labels = ax2.get_legend_handles_labels()
-ax2.legend(handles[::-1], labels[::-1], loc='lower right')
+ax2.legend(handles[::-1], labels[::-1], loc='upper right')
 plt.show()
